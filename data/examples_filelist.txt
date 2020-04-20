@@ -1,2 +1,10 @@
 data/example1.wav|exploring the expanses of space to keep our planet safe|1
 data/example2.wav|and all the species that call it home|1
+data/McConaughey01.wav|hey everybody mcconaughey here just want to say in these crazy times ah that weer in with this corona virus|1
+data/McConaughey02.wav|in this time when people are gonna move on the economy is gonna be in shambles for who knows how long|1
+data/McConaughey03.wav|ah lets not go to the lowest common denominator and get paranoid|1
+data/McConaughey04.wav|lets take care of ourselves and each other|1
+data/boris1.wav|trust in politics is being eroded unless we get breksit done|1
+data/boris2.wav|about what i would love to do for our country and my pan to get us of of the eee you|1
+data/boris3.wav|to talk to you|1
+data/boris4.wav|above all get breksit done|1

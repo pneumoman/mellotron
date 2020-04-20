@@ -5,13 +5,16 @@ from stft import STFT
 
 
 class LinearNorm(torch.nn.Module):
-    def __init__(self, in_dim, out_dim, bias=True, w_init_gain='linear'):
+    def __init__(self, in_dim, out_dim, bias=True, w_init_gain='linear', init_bias=False):
         super(LinearNorm, self).__init__()
         self.linear_layer = torch.nn.Linear(in_dim, out_dim, bias=bias)
 
         torch.nn.init.xavier_uniform_(
             self.linear_layer.weight,
             gain=torch.nn.init.calculate_gain(w_init_gain))
+        if bias and init_bias:
+            torch.nn.init.uniform_(
+                self.linear_layer.bias, -100.0, 10.0)
 
     def forward(self, x):
         return self.linear_layer(x)
@@ -19,7 +22,7 @@ class LinearNorm(torch.nn.Module):
 
 class ConvNorm(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1,
-                 padding=None, dilation=1, bias=True, w_init_gain='linear'):
+                 padding=None, dilation=1, bias=True, w_init_gain='linear', init_bias=False):
         super(ConvNorm, self).__init__()
         if padding is None:
             assert(kernel_size % 2 == 1)
@@ -30,6 +33,9 @@ class ConvNorm(torch.nn.Module):
                                     bias=bias)
         torch.nn.init.xavier_uniform_(
             self.conv.weight, gain=torch.nn.init.calculate_gain(w_init_gain))
+        if bias and init_bias:
+            torch.nn.init.uniform_(
+                self.conv.bias, -100.0, 100.0)
 
     def forward(self, signal):
         conv_signal = self.conv(signal)
@@ -38,7 +44,7 @@ class ConvNorm(torch.nn.Module):
 
 class ConvNorm2D(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1,
-                 padding=None, dilation=1, bias=True, w_init_gain='linear'):
+                 padding=None, dilation=1, bias=True, w_init_gain='linear', init_bias=False):
         super(ConvNorm2D, self).__init__()
         self.conv = torch.nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
                                     kernel_size=kernel_size, stride=stride,
@@ -46,6 +52,10 @@ class ConvNorm2D(torch.nn.Module):
                                     groups=1, bias=bias)
         torch.nn.init.xavier_uniform_(
             self.conv.weight, gain=torch.nn.init.calculate_gain(w_init_gain))
+        if bias and init_bias:
+            torch.nn.init.uniform_(
+                self.conv.bias, -100.0, 100.0)
+
 
     def forward(self, signal):
         conv_signal = self.conv(signal)

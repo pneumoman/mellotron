@@ -1,0 +1,2 @@
+nohup tensorboard --host 127.0.0.1 --port 9875 --logdir /home/pneumoman/projects/logs >> tboard.log &
+tail -100f tboard.log

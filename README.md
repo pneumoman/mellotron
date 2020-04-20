@@ -44,6 +44,17 @@ By default, the speaker embedding layer is [ignored]
 2. Load inference.ipynb 
 3. (optional) Download our published [WaveGlow](https://drive.google.com/open?id=1Rm5rV5XaWWiUbIpg5385l5sh68z2bVOE) model
 
+## Peculiarities to this branch
+This branch has been heavily hacked to replace YIN with Crepe.
+and to include some of the functionality from [MAXIMIZING MUTUAL INFORMATION FOR TACOTRON](https://arxiv.org/pdf/1909.01145.pdf)
+whose code is [here](https://github.com/bfs18/tacotron2)
+I have noticed in testing that while greatly slower than 
+Yin, crepe appears to be more accurate.
+
+* removed references to tf.contrib, since Crepe actually uses Tensorflow
+
+<span style="color:red">**_There is No guaratee that any of this works at all_**</span>
+
 ## Related repos
 [WaveGlow](https://github.com/NVIDIA/WaveGlow) Faster than real time Flow-based
 Generative Network for Speech Synthesis.

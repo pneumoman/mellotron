@@ -14,7 +14,6 @@ RUN apt-get install -y vim git  ffmpeg libportaudio2 cmake python3.6-dev python3
 	libsndifsdl2-dev python3-soundfile python-soundfile-doc \
         && apt-get -y autoremove
 
-
 RUN python -m pip install matplotlib # ==2.1.0
 RUN python -m pip install inflect # ==0.2.5
 RUN python -m pip install librosa # ==0.6.0
@@ -25,8 +24,15 @@ RUN python -m pip install pillow
 RUN python -m pip install nltk # ==3.4.5
 RUN python -m pip install jamo # ==0.4.1
 RUN python -m pip install music21
+RUN python -m pip install 'h5py>=2.7.0,<3.0.0'
+RUN python -m pip install 'resampy>=0.2.0,<0.3.0'
+RUN python -m pip install 'hmmlearn>=0.2.0,<0.3.0'
+RUN python -m pip install crepe
+RUN python -m pip install imageio>=2.3.0
+RUN python -m pip install scikit-learn>=0.16
+RUN python -m pip install hparams
 
-RUN conda install tensorflow\<2.0.0
+RUN conda install tensorflow
 
 RUN apt-get install -y musescore
 

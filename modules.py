@@ -37,8 +37,8 @@ class ReferenceEncoder(nn.Module):
     def __init__(self, hp):
 
         super().__init__()
-        K = len(hp.ref_enc_filters)
-        filters = [1] + hp.ref_enc_filters
+        K = len(hp["ref_enc_filters"])
+        filters = [1] + hp["ref_enc_filters"]
 
         convs = [nn.Conv2d(in_channels=filters[i],
                            out_channels=filters[i + 1],
@@ -47,15 +47,15 @@ class ReferenceEncoder(nn.Module):
                            padding=(1, 1)) for i in range(K)]
         self.convs = nn.ModuleList(convs)
         self.bns = nn.ModuleList(
-            [nn.BatchNorm2d(num_features=hp.ref_enc_filters[i])
+            [nn.BatchNorm2d(num_features=hp["ref_enc_filters"][i])
              for i in range(K)])
 
-        out_channels = self.calculate_channels(hp.n_mel_channels, 3, 2, 1, K)
-        self.gru = nn.GRU(input_size=hp.ref_enc_filters[-1] * out_channels,
-                          hidden_size=hp.ref_enc_gru_size,
+        out_channels = self.calculate_channels(hp["n_mel_channels"], 3, 2, 1, K)
+        self.gru = nn.GRU(input_size=hp["ref_enc_filters"][-1] * out_channels,
+                          hidden_size=hp["ref_enc_gru_size"],
                           batch_first=True)
-        self.n_mel_channels = hp.n_mel_channels
-        self.ref_enc_gru_size = hp.ref_enc_gru_size
+        self.n_mel_channels = hp["n_mel_channels"]
+        self.ref_enc_gru_size = hp["ref_enc_gru_size"]
 
     def forward(self, inputs):
         out = inputs.view(inputs.size(0), 1, -1, self.n_mel_channels)
@@ -83,12 +83,12 @@ class STL(nn.Module):
     '''
     def __init__(self, hp):
         super().__init__()
-        self.embed = nn.Parameter(torch.FloatTensor(hp.token_num, hp.token_embedding_size // hp.num_heads))
-        d_q = hp.token_embedding_size // 2
-        d_k = hp.token_embedding_size // hp.num_heads
+        self.embed = nn.Parameter(torch.FloatTensor(hp["token_num"], hp["token_embedding_size"] // hp["num_heads"]))
+        d_q = hp["token_embedding_size"] // 2
+        d_k = hp["token_embedding_size"] // hp["num_heads"]
         self.attention = MultiHeadAttention(
-            query_dim=d_q, key_dim=d_k, num_units=hp.token_embedding_size,
-            num_heads=hp.num_heads)
+            query_dim=d_q, key_dim=d_k, num_units=hp["token_embedding_size"],
+            num_heads=hp["num_heads"])
 
         init.normal_(self.embed, mean=0, std=0.5)
 

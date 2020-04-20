@@ -1,17 +1,23 @@
-import tensorflow as tf
+#import tensorflow as tf
+from tensorflow.compat.v1 import logging
+from hparams import HParams
 from text.symbols import symbols
+import random
+
+
 
 
 def create_hparams(hparams_string=None, verbose=False):
     """Create model hyperparameters. Parse nondefault from given string."""
 
-    hparams = tf.contrib.training.HParams(
+    hparams = HParams(
         ################################
         # Experiment Parameters        #
         ################################
-        epochs=50000,
+        verbose=-1,
+        epochs=80000,
         iters_per_checkpoint=500,
-        seed=1234,
+        seed=random.randint(1000,9999),  # 1234,
         dynamic_loss_scaling=True,
         fp16_run=False,
         distributed_run=False,
@@ -19,13 +25,19 @@ def create_hparams(hparams_string=None, verbose=False):
         dist_url="tcp://localhost:54321",
         cudnn_enabled=True,
         cudnn_benchmark=False,
-        ignore_layers=['speaker_embedding.weight'],
+        load_mel_f0_from_disk=True,
+        randomize_samples=True,
+        ignore_layers='',
+        #  ignore_layers=['speaker_embedding.weight'],
 
         ################################
         # Data Parameters             #
         ################################
-        training_files='filelists/ljs_audiopaths_text_sid_train_filelist.txt',
-        validation_files='filelists/ljs_audiopaths_text_sid_val_filelist.txt',
+        #  training_files='filelists/ljs_audiopaths_text_sid_train_filelist.txt',
+        #  validation_files='filelists/ljs_audiopaths_text_sid_val_filelist.txt',
+        validation_files='filelists/libritts_train_clean_100_audiopath_text_sid_atleast5min_val_filelist.txt',
+        training_files='filelists/libritts_train_clean_100_audiopath_text_sid_shorterthan10s_atleast5min_train_filelist.txt',
+
         text_cleaners=['english_cleaners'],
         p_arpabet=1.0,
         cmudict_path="data/cmu_dictionary",
@@ -34,7 +46,7 @@ def create_hparams(hparams_string=None, verbose=False):
         # Audio Parameters             #
         ################################
         max_wav_value=32768.0,
-        sampling_rate=22050,
+        sampling_rate=24000,  # 22050,
         filter_length=1024,
         hop_length=256,
         win_length=1024,
@@ -44,10 +56,13 @@ def create_hparams(hparams_string=None, verbose=False):
         f0_min=80,
         f0_max=880,
         harm_thresh=0.25,
+        crepe_size='full',  #    'tiny', 'small', 'medium', 'large', 'full'
+        viterbi_smooth=False,
 
         ################################
         # Model Parameters             #
         ################################
+        init_bias=False,
         n_symbols=len(symbols),
         symbols_embedding_dim=512,
 
@@ -67,9 +82,9 @@ def create_hparams(hparams_string=None, verbose=False):
         prenet_rms_kernel_size=1,
         max_decoder_steps=1000,
         gate_threshold=0.5,
-        p_attention_dropout=0.1,
-        p_decoder_dropout=0.1,
-        p_teacher_forcing=1.0,
+        p_attention_dropout=0.3,
+        p_decoder_dropout=0.3,
+        p_teacher_forcing=0.8,
 
         # Attention parameters
         attention_rnn_dim=1024,
@@ -104,22 +119,24 @@ def create_hparams(hparams_string=None, verbose=False):
         ################################
         # Optimization Hyperparameters #
         ################################
+        mmi_size=8192,
+        use_mmi=True,
         use_saved_learning_rate=False,
-        learning_rate=1e-3,
-        learning_rate_min=1e-5,
-        learning_rate_anneal=50000,
+        learning_rate=2e-4,
+        learning_rate_min=1e-6,
+        learning_rate_anneal=70000,
         weight_decay=1e-6,
         grad_clip_thresh=1.0,
-        batch_size=32,
+        batch_size=16,  # 16,  # 32,
         mask_padding=True,  # set model's padded outputs to padded values
 
     )
 
     if hparams_string:
-        tf.compat.v1.logging.info('Parsing command line hparams: %s', hparams_string)
-        hparams.parse(hparams_string)
+        logging.info('Parsing command line hparams: %s', hparams_string)
+        hparams.parse_hparam_args(hparams_string)
 
-    if verbose:
-        tf.compat.v1.logging.info('Final parsed hparams: %s', hparams.values())
+    if verbose > 1:
+        logging.info('Final parsed hparams: %s', hparams.values())
 
     return hparams

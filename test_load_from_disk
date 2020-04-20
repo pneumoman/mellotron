@@ -1,0 +1,12 @@
+from data_utils import TextMelLoader
+from hparam_setup import create_hparams
+
+if __name__ == '__main__':
+
+    hparams = create_hparams()
+    train_loader = TextMelLoader(hparams["training_files"], hparams)
+    eval_loader = TextMelLoader(hparams["validation_files"], hparams)
+
+    for txt, mel, id, f0 in train_loader:
+        print(mel.shape, f0.shape)
+

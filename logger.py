@@ -9,16 +9,18 @@ class Tacotron2Logger(SummaryWriter):
     def __init__(self, logdir):
         super(Tacotron2Logger, self).__init__(logdir)
 
-    def log_training(self, reduced_loss, grad_norm, learning_rate, duration,
+    def log_training(self, reduced_loss, taco_loss, mi_loss, grad_norm, learning_rate, duration,
                      iteration):
             self.add_scalar("training.loss", reduced_loss, iteration)
+            self.add_scalar("taco.loss", taco_loss, iteration)
+            self.add_scalar("mi.loss", mi_loss, iteration)
             self.add_scalar("grad.norm", grad_norm, iteration)
             self.add_scalar("learning.rate", learning_rate, iteration)
             self.add_scalar("duration", duration, iteration)
 
-    def log_validation(self, reduced_loss, model, y, y_pred, iteration):
+    def log_validation(self, reduced_loss, model, y, y_pred, phrases, iteration):
         self.add_scalar("validation.loss", reduced_loss, iteration)
-        _, mel_outputs, gate_outputs, alignments = y_pred
+        _, mel_outputs, gate_outputs, alignments, decoder_outputs, text = y_pred
         mel_targets, gate_targets = y
 
         # plot distribution of parameters
@@ -41,8 +43,13 @@ class Tacotron2Logger(SummaryWriter):
             plot_spectrogram_to_numpy(mel_outputs[idx].data.cpu().numpy()),
             iteration, dataformats='HWC')
         self.add_image(
+            "Encoder_output",
+            plot_spectrogram_to_numpy(text[idx].data.cpu().numpy()),
+            iteration, dataformats='HWC')
+        self.add_image(
             "gate",
             plot_gate_outputs_to_numpy(
                 gate_targets[idx].data.cpu().numpy(),
                 torch.sigmoid(gate_outputs[idx]).data.cpu().numpy()),
             iteration, dataformats='HWC')
+        self.add_text("phrase", phrases[idx], iteration)
