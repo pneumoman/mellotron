@@ -15,6 +15,7 @@ from data_utils import TextMelLoader, TextMelCollate
 from loss_function import Tacotron2Loss
 from logger import Tacotron2Logger
 from hparams import create_hparams
+from mcd_clip import _calculate_mcd
 
 
 def reduce_tensor(tensor, n_gpus):
@@ -119,21 +120,27 @@ def validate(model, criterion, valset, iteration, batch_size, n_gpus,
                                 pin_memory=False, collate_fn=collate_fn)
 
         val_loss = 0.0
+        mcd_error = 0.0
         for i, batch in enumerate(val_loader):
             x, y = model.parse_batch(batch)
             y_pred = model(x)
             loss = criterion(y_pred, y)
+
+            if rank == 0:
+                mcd_error += _calculate_mcd(y[0].cpu().numpy()[0], y_pred[0].cpu().numpy()[0])
+
             if distributed_run:
                 reduced_val_loss = reduce_tensor(loss.data, n_gpus).item()
             else:
                 reduced_val_loss = loss.item()
             val_loss += reduced_val_loss
         val_loss = val_loss / (i + 1)
+        mcd_error = mcd_error / (i + 1)
 
     model.train()
     if rank == 0:
         print("Validation loss {}: {:9f}  ".format(iteration, reduced_val_loss))
-        logger.log_validation(val_loss, model, y, y_pred, iteration)
+        logger.log_validation(val_loss, model, y, y_pred, mcd_error, iteration)
 
 
 def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
@@ -210,6 +217,30 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
             y_pred = model(x)
 
             loss = criterion(y_pred, y)
+
+            if model.mmi is not None and iteration < hparams.mmi_limit:
+                # transpose to [b, T, dim]
+
+                decoder_outputs = y_pred[4].transpose(2, 1)
+                # print('decoder_output', decoder_outputs.shape, y_pred[1].transpose(2, 1).shape)
+                ctc_text, ctc_text_lengths, aco_lengths = x[0], x[1], x[4]
+                taco_loss = loss
+                mmi_loss = model.mmi(decoder_outputs, ctc_text, aco_lengths, ctc_text_lengths)
+                # if hparams.use_gaf:
+                #     if i % gradient_adaptive_factor.UPDATE_GAF_EVERY_N_STEP == 0:
+                #         safe_loss = 0. * sum([x.sum() for x in model.parameters()])
+                #         gaf = gradient_adaptive_factor.calc_grad_adapt_factor(
+                #             taco_loss + safe_loss, mi_loss + safe_loss, model.parameters(), optimizer)
+                #         gaf = min(gaf, hparams.max_gaf)
+                # else:
+                #     gaf = 1.0
+                # loss = loss + gaf * mi_loss
+                loss = loss + hparams.mmi_factor * mmi_loss
+            else:
+                taco_loss = loss
+                mmi_loss = torch.tensor([-1.0])
+                # gaf = -1.0
+
             if hparams.distributed_run:
                 reduced_loss = reduce_tensor(loss.data, n_gpus).item()
             else:
@@ -233,10 +264,10 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
 
             if not is_overflow and rank == 0:
                 duration = time.perf_counter() - start
-                print("Train loss {} {:.6f} Grad Norm {:.6f} {:.2f}s/it".format(
-                    iteration, reduced_loss, grad_norm, duration))
+                print("Step {} Train loss {:.6f} MMI Loss {:.6f} Grad Norm {:.6f} {:.2f}s/it".format(
+                    iteration, reduced_loss, mmi_loss.item(), grad_norm, duration))
                 logger.log_training(
-                    reduced_loss, grad_norm, learning_rate, duration, iteration)
+                    reduced_loss, taco_loss, mmi_loss, grad_norm, learning_rate, duration, iteration)
 
             if not is_overflow and (iteration % hparams.iters_per_checkpoint == 0):
                 validate(model, criterion, valset, iteration,

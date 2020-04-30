@@ -26,7 +26,9 @@ def differenceFunction(x, N, tau_max):
     size_pad = min(x * 2 ** p2 for x in nice_numbers if x * 2 ** p2 >= size)
     fc = np.fft.rfft(x, size_pad)
     conv = np.fft.irfft(fc * fc.conjugate())[:tau_max]
-    return x_cumsum[w:w - tau_max:-1] + x_cumsum[w] - x_cumsum[:tau_max] - 2 * conv
+    if(len(conv.shape) > 1):
+        raise ValueError("signal is not mono")
+    return x_cumsum[w:w - tau_max:-1] + x_cumsum[w] - x_cumsum[:tau_max] - 2 * conv, tau_max
 
 
 def cumulativeMeanNormalizedDifferenceFunction(df, N):
@@ -40,7 +42,6 @@ def cumulativeMeanNormalizedDifferenceFunction(df, N):
     :return: cumulative mean normalized difference function
     :rtype: list
     """
-
     cmndf = df[1:] * range(1, N) / np.cumsum(df[1:]).astype(float) #scipy method
     return np.insert(cmndf, 0, 1)
 
@@ -103,9 +104,9 @@ def compute_yin(sig, sr, w_len=512, w_step=256, f0_min=100, f0_max=500,
 
     for i, frame in enumerate(frames):
         # Compute YIN
-        df = differenceFunction(frame, w_len, tau_max)
-        cmdf = cumulativeMeanNormalizedDifferenceFunction(df, tau_max)
-        p = getPitch(cmdf, tau_min, tau_max, harmo_thresh)
+        df, tau_actual = differenceFunction(frame, w_len, tau_max)
+        cmdf = cumulativeMeanNormalizedDifferenceFunction(df, tau_actual)
+        p = getPitch(cmdf, tau_min, tau_actual, harmo_thresh)
 
         # Get results
         if np.argmin(cmdf) > tau_min:

@@ -19,13 +19,18 @@ def create_hparams(hparams_string=None, verbose=False):
         dist_url="tcp://localhost:54321",
         cudnn_enabled=True,
         cudnn_benchmark=False,
-        ignore_layers=['speaker_embedding.weight'],
+        #  ignore_layers='',
+        ignore_layers=['decoder.decoder_conversion.0.linear_layer.weight', 'decoder.decoder_conversion.0.linear_layer.bias', 'mmi.proj.0.linear_layer.weight', 'mmi.proj.0.linear_layer.bias', 'mmi.ctc_proj.linear_layer.weight', 'mmi.ctc_proj.linear_layer.bias'],
+        #  ignore_layers=['speaker_embedding.weight'],
 
         ################################
         # Data Parameters             #
         ################################
-        training_files='filelists/ljs_audiopaths_text_sid_train_filelist.txt',
-        validation_files='filelists/ljs_audiopaths_text_sid_val_filelist.txt',
+        #  training_files='filelists/ljs_audiopaths_text_sid_train_filelist.txt',
+        #  validation_files='filelists/ljs_audiopaths_text_sid_val_filelist.txt',
+        validation_files='filelists/libritts_train_clean_100_audiopath_text_sid_atleast5min_val_filelist.txt',
+        training_files='filelists/libritts_train_clean_100_audiopath_text_sid_shorterthan10s_atleast5min_train_filelist.txt',
+
         text_cleaners=['english_cleaners'],
         p_arpabet=1.0,
         cmudict_path="data/cmu_dictionary",
@@ -37,7 +42,7 @@ def create_hparams(hparams_string=None, verbose=False):
         sampling_rate=22050,
         filter_length=1024,
         hop_length=256,
-        win_length=1024,
+        win_length=1024,  # 1024,
         n_mel_channels=80,
         mel_fmin=0.0,
         mel_fmax=8000.0,
@@ -69,7 +74,7 @@ def create_hparams(hparams_string=None, verbose=False):
         gate_threshold=0.5,
         p_attention_dropout=0.1,
         p_decoder_dropout=0.1,
-        p_teacher_forcing=1.0,
+        p_teacher_forcing=0.8,
 
         # Attention parameters
         attention_rnn_dim=1024,
@@ -110,8 +115,15 @@ def create_hparams(hparams_string=None, verbose=False):
         learning_rate_anneal=50000,
         weight_decay=1e-6,
         grad_clip_thresh=1.0,
-        batch_size=32,
+        batch_size=16,  # 32,
         mask_padding=True,  # set model's padded outputs to padded values
+
+        #################################
+        # Maximizing Mutual Information #
+        #################################
+        use_mmi=True,
+        mmi_factor=2,
+        mmi_limit=4000,
 
     )
 
