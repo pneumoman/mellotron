@@ -6,3 +6,8 @@ kill ${xpid}
 
 echo "process id ${xpid}, $cmdtext killed"
 
+model_dir=$(ls -t my_models | head -1)
+model_file=$(ls -t my_models/${model_dir} | head -1)
+
+echo "./my_models/${model_dir}/${model_file}"
+

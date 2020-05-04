@@ -20,8 +20,8 @@ def create_hparams(hparams_string=None, verbose=False):
         cudnn_enabled=True,
         cudnn_benchmark=False,
         #  ignore_layers='',
-        ignore_layers=['decoder.decoder_conversion.0.linear_layer.weight', 'decoder.decoder_conversion.0.linear_layer.bias', 'mmi.proj.0.linear_layer.weight', 'mmi.proj.0.linear_layer.bias', 'mmi.ctc_proj.linear_layer.weight', 'mmi.ctc_proj.linear_layer.bias'],
-        #  ignore_layers=['speaker_embedding.weight'],
+        # ignore_layers=['decoder.decoder_conversion.0.linear_layer.weight', 'decoder.decoder_conversion.0.linear_layer.bias', 'mmi.proj.0.linear_layer.weight', 'mmi.proj.0.linear_layer.bias', 'mmi.ctc_proj.linear_layer.weight', 'mmi.ctc_proj.linear_layer.bias'],
+        ignore_layers=['speaker_embedding.weight'],
 
         ################################
         # Data Parameters             #
@@ -34,6 +34,7 @@ def create_hparams(hparams_string=None, verbose=False):
         text_cleaners=['english_cleaners'],
         p_arpabet=1.0,
         cmudict_path="data/cmu_dictionary",
+        shuffle_data=True,
 
         ################################
         # Audio Parameters             #
@@ -53,6 +54,7 @@ def create_hparams(hparams_string=None, verbose=False):
         ################################
         # Model Parameters             #
         ################################
+        mel_dropout_rate=0.2,
         n_symbols=len(symbols),
         symbols_embedding_dim=512,
 
@@ -115,7 +117,7 @@ def create_hparams(hparams_string=None, verbose=False):
         learning_rate_anneal=50000,
         weight_decay=1e-6,
         grad_clip_thresh=1.0,
-        batch_size=16,  # 32,
+        batch_size=14,  # 16,  # 32,
         mask_padding=True,  # set model's padded outputs to padded values
 
         #################################

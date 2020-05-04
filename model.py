@@ -617,9 +617,10 @@ class Tacotron2(nn.Module):
         else:
             self.cuda_run = False
 
-    def parse_batch(self, batch):
+    def parse_batch(self, batch, mel_dropout=-1.0):
         text_padded, input_lengths, mel_padded, gate_padded, \
             output_lengths, speaker_ids, f0_padded = batch
+
         text_padded = to_gpu(text_padded).long()
         input_lengths = to_gpu(input_lengths).long()
         max_len = torch.max(input_lengths.data).item()
@@ -628,7 +629,19 @@ class Tacotron2(nn.Module):
         output_lengths = to_gpu(output_lengths).long()
         speaker_ids = to_gpu(speaker_ids.data).long()
         f0_padded = to_gpu(f0_padded).float()
-        return ((text_padded, input_lengths, mel_padded, max_len,
+
+        if mel_dropout > 0.0:
+            mel_source = mel_padded.clone()
+            n = len(mel_padded)
+            for i in range(n):
+                if np.random.uniform(0.0, 1.0) < mel_dropout:
+                    mel_source[i] = torch.zeros_like(mel_source[i])
+            mel_padded = to_gpu(mel_padded).float()
+            mel_source = to_gpu(mel_source).float()
+        else:
+            mel_padded = to_gpu(mel_padded).float()
+            mel_source = mel_padded
+        return ((text_padded, input_lengths, mel_source, max_len,
                  output_lengths, speaker_ids, f0_padded),
                 (mel_padded, gate_padded))
 

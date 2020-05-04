@@ -25,6 +25,8 @@ RUN python -m pip install pillow
 RUN python -m pip install nltk # ==3.4.5
 RUN python -m pip install jamo # ==0.4.1
 RUN python -m pip install music21
+RUN python -m pip install ipywidgets \
+    && jupyter nbextension enable --py widgetsnbextension
 
 RUN conda install tensorflow\<2.0.0
 

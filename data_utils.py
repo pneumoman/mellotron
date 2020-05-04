@@ -36,6 +36,7 @@ class TextMelLoader(torch.utils.data.Dataset):
         self.harm_thresh = hparams.harm_thresh
         self.p_arpabet = hparams.p_arpabet
 
+
         self.cmudict = None
         if hparams.cmudict_path is not None:
             self.cmudict = cmudict.CMUDict(hparams.cmudict_path)
@@ -45,7 +46,8 @@ class TextMelLoader(torch.utils.data.Dataset):
             self.speaker_ids = self.create_speaker_lookup_table(self.audiopaths_and_text)
 
         random.seed(1234)
-        random.shuffle(self.audiopaths_and_text)
+        if hparams.shuffle_data:
+            random.shuffle(self.audiopaths_and_text)
 
     def create_speaker_lookup_table(self, audiopaths_and_text):
         speaker_ids = np.sort(np.unique([x[2] for x in audiopaths_and_text]))

@@ -15,7 +15,7 @@ from data_utils import TextMelLoader, TextMelCollate
 from loss_function import Tacotron2Loss
 from logger import Tacotron2Logger
 from hparams import create_hparams
-from mcd_clip import _calculate_mcd
+from mcd_wrapper import _calculate_mcd
 
 
 def reduce_tensor(tensor, n_gpus):
@@ -213,7 +213,7 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
                     param_group['lr'] = learning_rate
 
             model.zero_grad()
-            x, y = model.parse_batch(batch)
+            x, y = model.parse_batch(batch, mel_dropout=hparams.mel_dropout_rate)
             y_pred = model(x)
 
             loss = criterion(y_pred, y)
