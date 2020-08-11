@@ -106,8 +106,9 @@ class TextMelLoader(torch.utils.data.Dataset):
 class TextMelCollate():
     """ Zero-pads model inputs and targets based on number of frames per setep
     """
-    def __init__(self, n_frames_per_step):
+    def __init__(self, n_frames_per_step, min_input_length=65):
         self.n_frames_per_step = n_frames_per_step
+        self.min_input_length = min_input_length
 
     def __call__(self, batch):
         """Collate's training batch from normalized text and mel-spectrogram
@@ -121,9 +122,20 @@ class TextMelCollate():
             dim=0, descending=True)
         max_input_len = input_lengths[0]
 
-        text_padded = torch.LongTensor(len(batch), max_input_len)
+        # find if any samples below minimum input length
+        # {size of 2 ** len(ReferenceEncoder.convs) + 1} ,
+        # reset batch length
+        batch_length = len(batch)
+        for i in range(batch_length - 1, 0, -1):
+            if input_lengths[i] > self.min_input_length:
+                break
+        batch_length = i + 1
+
+        input_lengths = input_lengths[:batch_length]
+
+        text_padded = torch.LongTensor(batch_length, max_input_len)
         text_padded.zero_()
-        for i in range(len(ids_sorted_decreasing)):
+        for i in range(batch_length):
             text = batch[ids_sorted_decreasing[i]][0]
             text_padded[i, :text.size(0)] = text
 
@@ -135,16 +147,16 @@ class TextMelCollate():
             assert max_target_len % self.n_frames_per_step == 0
 
         # include mel padded, gate padded and speaker ids
-        mel_padded = torch.FloatTensor(len(batch), num_mels, max_target_len)
+        mel_padded = torch.FloatTensor(batch_length, num_mels, max_target_len)
         mel_padded.zero_()
-        gate_padded = torch.FloatTensor(len(batch), max_target_len)
+        gate_padded = torch.FloatTensor(batch_length, max_target_len)
         gate_padded.zero_()
-        output_lengths = torch.LongTensor(len(batch))
-        speaker_ids = torch.LongTensor(len(batch))
-        f0_padded = torch.FloatTensor(len(batch), 1, max_target_len)
+        output_lengths = torch.LongTensor(batch_length)
+        speaker_ids = torch.LongTensor(batch_length)
+        f0_padded = torch.FloatTensor(batch_length, 1, max_target_len)
         f0_padded.zero_()
 
-        for i in range(len(ids_sorted_decreasing)):
+        for i in range(batch_length):
             mel = batch[ids_sorted_decreasing[i]][1]
             mel_padded[i, :, :mel.size(1)] = mel
             gate_padded[i, mel.size(1)-1:] = 1
