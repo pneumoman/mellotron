@@ -20,7 +20,7 @@ def create_hparams(hparams_string=None, verbose=False):
         cudnn_enabled=True,
         cudnn_benchmark=False,
         #  ignore_layers='',
-        # ignore_layers=['decoder.decoder_conversion.0.linear_layer.weight', 'decoder.decoder_conversion.0.linear_layer.bias', 'mmi.proj.0.linear_layer.weight', 'mmi.proj.0.linear_layer.bias', 'mmi.ctc_proj.linear_layer.weight', 'mmi.ctc_proj.linear_layer.bias'],
+        # ignore_layers=['decoder.decoder_conversion.0.linear_layer.weight', 'decoder.decoder_conversion.0.linear_layer.bias', 'mmi.proj.0.linear_layer.weight', 'mmi.proj.0.linear_layer.bias', 'mmi.ctc_proj.linear_layer.weight', 'mmi.ctc_proj.linear_layer.bias', 'speaker_embedding.weight'],
         ignore_layers=['speaker_embedding.weight'],
 
         ################################
@@ -124,7 +124,7 @@ def create_hparams(hparams_string=None, verbose=False):
         # Maximizing Mutual Information #
         #################################
         use_mmi=True,
-        mmi_factor=2,
+        mmi_factor=0.4,
         mmi_limit=4000,
 
     )

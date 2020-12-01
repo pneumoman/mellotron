@@ -16,6 +16,7 @@ from loss_function import Tacotron2Loss
 from logger import Tacotron2Logger
 from hparams import create_hparams
 from mcd_wrapper import _calculate_mcd
+from running_avg import RunningAverage
 
 
 def reduce_tensor(tensor, n_gpus):
@@ -199,6 +200,8 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
 
     model.train()
     is_overflow = False
+    mmi_avg = RunningAverage(50)
+    mmi_factor = hparams.mmi_factor
     # ================ MAIN TRAINNIG LOOP! ===================
     for epoch in range(epoch_offset, hparams.epochs):
         print("Epoch: {}".format(epoch))
@@ -218,7 +221,7 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
 
             loss = criterion(y_pred, y)
 
-            if model.mmi is not None and iteration < hparams.mmi_limit:
+            if model.mmi is not None:
                 # transpose to [b, T, dim]
 
                 decoder_outputs = y_pred[4].transpose(2, 1)
@@ -235,7 +238,12 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
                 # else:
                 #     gaf = 1.0
                 # loss = loss + gaf * mi_loss
-                loss = loss + hparams.mmi_factor * mmi_loss
+                mmi_avg.append(mmi_loss.item())
+                if mmi_avg.get_avg() < 0.05 and iteration > hparams.mmi_limit and iteration % 200 == 0:
+                    mmi_factor = mmi_factor*0.9
+                else:
+                    mmi_factor = hparams.mmi_factor
+                loss = loss*(1.0-mmi_factor) + mmi_factor * mmi_loss
             else:
                 taco_loss = loss
                 mmi_loss = torch.tensor([-1.0])
@@ -265,9 +273,9 @@ def train(output_directory, log_directory, checkpoint_path, warm_start, n_gpus,
             if not is_overflow and rank == 0:
                 duration = time.perf_counter() - start
                 print("Step {} Train loss {:.6f} MMI Loss {:.6f} Grad Norm {:.6f} {:.2f}s/it".format(
-                    iteration, reduced_loss, mmi_loss.item(), grad_norm, duration))
+                    iteration, reduced_loss, mmi_loss.item(), grad_norm, duration), flush=True)
                 logger.log_training(
-                    reduced_loss, taco_loss, mmi_loss, grad_norm, learning_rate, duration, iteration)
+                    reduced_loss, taco_loss, mmi_loss, mmi_factor, grad_norm, learning_rate, duration, iteration)
 
             if not is_overflow and (iteration % hparams.iters_per_checkpoint == 0):
                 validate(model, criterion, valset, iteration,

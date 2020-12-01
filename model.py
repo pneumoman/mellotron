@@ -194,7 +194,6 @@ class Encoder(nn.Module):
             x = F.dropout(F.relu(conv(x)), drop_rate, self.training)
 
         x = x.transpose(1, 2)
-
         # pytorch tensor are not reversible, hence the conversion
         input_lengths = input_lengths.cpu().numpy()
         x = nn.utils.rnn.pack_padded_sequence(
@@ -303,22 +302,15 @@ class Decoder(nn.Module):
         B = memory.size(0)
         MAX_TIME = memory.size(1)
 
-        self.attention_hidden = Variable(memory.data.new(
-            B, self.attention_rnn_dim).zero_())
-        self.attention_cell = Variable(memory.data.new(
-            B, self.attention_rnn_dim).zero_())
+        self.attention_hidden = Variable(memory.data.new(B, self.attention_rnn_dim).zero_())
+        self.attention_cell = Variable(memory.data.new(B, self.attention_rnn_dim).zero_())
 
-        self.decoder_hidden = Variable(memory.data.new(
-            B, self.decoder_rnn_dim).zero_())
-        self.decoder_cell = Variable(memory.data.new(
-            B, self.decoder_rnn_dim).zero_())
+        self.decoder_hidden = Variable(memory.data.new(B, self.decoder_rnn_dim).zero_())
+        self.decoder_cell = Variable(memory.data.new(B, self.decoder_rnn_dim).zero_())
 
-        self.attention_weights = Variable(memory.data.new(
-            B, MAX_TIME).zero_())
-        self.attention_weights_cum = Variable(memory.data.new(
-            B, MAX_TIME).zero_())
-        self.attention_context = Variable(memory.data.new(
-            B, self.encoder_embedding_dim).zero_())
+        self.attention_weights = Variable(memory.data.new(B, MAX_TIME).zero_())
+        self.attention_weights_cum = Variable(memory.data.new(B, MAX_TIME).zero_())
+        self.attention_context = Variable(memory.data.new(B, self.encoder_embedding_dim).zero_())
 
         self.memory = memory
         self.processed_memory = self.attention_layer.memory_layer(memory)
@@ -621,8 +613,8 @@ class Tacotron2(nn.Module):
         text_padded, input_lengths, mel_padded, gate_padded, \
             output_lengths, speaker_ids, f0_padded = batch
 
-        text_padded = to_gpu(text_padded).long()
         input_lengths = to_gpu(input_lengths).long()
+        text_padded = to_gpu(text_padded).long()
         max_len = torch.max(input_lengths.data).item()
         mel_padded = to_gpu(mel_padded).float()
         gate_padded = to_gpu(gate_padded).float()
@@ -647,14 +639,28 @@ class Tacotron2(nn.Module):
 
     def parse_output(self, outputs, output_lengths=None):
         if self.mask_padding and output_lengths is not None:
-            mask = ~get_mask_from_lengths(output_lengths)
-            mask = mask.expand(self.n_mel_channels, mask.size(0), mask.size(1))
-            mask = mask.permute(1, 0, 2)
+            try:
+                mask = ~get_mask_from_lengths(output_lengths,
+                                              max_len=outputs[0].shape[2])
+                mask = mask.expand(self.n_mel_channels, mask.size(0), mask.size(1))
+                mask = mask.permute(1, 0, 2)
+                # for it in outputs:
+                #     print("#### ", it.shape, end=' ')
+                # print("mask:{} len:{}".format(
+                #     mask.shape, torch.max(output_lengths).item()
+                # ), flush=True)
 
-            outputs[0].data.masked_fill_(mask, 0.0)
-            outputs[1].data.masked_fill_(mask, 0.0)
-            outputs[2].data.masked_fill_(mask[:, 0, :], 1e3)  # gate energies
+                outputs[0].data.masked_fill_(mask, 0.0)
+                outputs[1].data.masked_fill_(mask, 0.0)
+                outputs[2].data.masked_fill_(mask[:, 0, :], 1e3)  # gate energies
+            except Exception as e:
 
+                print("output\t\t\t\tmask\t\tlength")
+                for i in range(len(output_lengths)):
+                    print("{}\t{}\t{}".format(outputs[0].shape,
+                                                      mask[i].shape,
+                                                      output_lengths[i].item()))
+                raise e
         return outputs
 
     def forward(self, inputs):
